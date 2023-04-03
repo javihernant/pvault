@@ -1,14 +1,12 @@
 use std::io::{self, Write};
 
-mod login;
-//mod signup;
 #[derive(Debug)]
-pub struct Credentials {
+pub struct LoginInput {
     user: String,
     password: String,
 }
 
-impl Credentials {
+impl LoginInput {
     fn read_user() -> String {
         print!("User: ");
         io::stdout().flush().unwrap();
@@ -25,11 +23,11 @@ impl Credentials {
         password.trim().to_string()
     }
 
-    pub fn new() -> Credentials {
+    pub fn new() -> LoginInput {
         let user = Self::read_user();
         let password = Self::read_pass();
 
-        Credentials { 
+        LoginInput { 
             user,
             password
         }

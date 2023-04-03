@@ -1,4 +1,4 @@
 pub mod account;
-mod credentials;
+pub mod account_input;
 mod auth;
 
