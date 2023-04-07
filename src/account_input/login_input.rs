@@ -33,11 +33,11 @@ impl LoginInput {
         }
     }
 
-    pub fn user(&self) -> &str {
+    pub fn get_user(&self) -> &str {
         &self.user
     }
 
-    pub fn pass(&self) -> &str {
+    pub fn get_pass(&self) -> &str {
         &self.password
     }
 }
