@@ -10,27 +10,28 @@ pub struct Account {
     data: String,
     banned: bool,
     retries_left: usize,
+    rank: i32,
 }
 
 #[derive(Debug)]
-pub enum Error {
+pub enum LoginError {
     UserNotFound,
     WrongPassword,
-    TooManyRetries,
+    BannedAccount,
 }
 
-impl Display for Error {
+impl Display for LoginError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::UserNotFound => write!(f, "Invalid User"),
             Self::WrongPassword => write!(f, "Wrong Password"),
-            Self::TooManyRetries => write!(f, "Too many login retries"),
+            Self::BannedAccount => write!(f, "This account is banned"),
         }
     }
 }
 
 impl Account {
-    pub fn fetch(user: &str, db_conn: &Connection) -> Result<Account, Error> {
+    pub fn fetch(user: &str, db_conn: &Connection) -> Result<Account, LoginError> {
         let query = "SELECT * FROM users WHERE username = ?";
         let mut statement = db_conn.prepare(query).unwrap();
         statement.bind((1, user)).unwrap();
@@ -42,6 +43,7 @@ impl Account {
             let data = statement.read::<String, _>("data").unwrap();
             let banned = statement.read::<i64, _>("banned").unwrap() != 0;
             let retries_left = statement.read::<i64, _>("retries_left").unwrap() as usize;
+            let rank = statement.read::<i64, _>("rank").unwrap() as i32;
 
             let acc = Account {
                 id,
@@ -49,24 +51,25 @@ impl Account {
                 password,
                 data,
                 banned,
-                retries_left
+                retries_left,
+                rank
             };
             Ok(acc)
         } else {
-            Err(Error::UserNotFound)
+            Err(LoginError::UserNotFound)
         }
     }
 
-    pub fn is_pass_valid(&self, pass: &str) -> Result<(), Error> {
-        if pass == self.password {
+    pub fn is_pass_valid(&self, pass: &str) -> Result<(), LoginError> {
+        if pass == self.password && !self.banned {
             Ok(())
         }
         else
         {
-            if self.retries_left > 0 {
-                Err(Error::WrongPassword)
+            if !self.banned {
+                Err(LoginError::WrongPassword)
             } else {
-                Err(Error::TooManyRetries)
+                Err(LoginError::BannedAccount)
             }
         }
     }
@@ -80,7 +83,7 @@ impl Account {
         }
     }
 
-    pub fn write_update(&self, db_conn: &Connection) {
+    pub fn write_update(&self, db_conn: &Connection) -> Result<(), sqlite::Error>{
         let query = format!("UPDATE users
 SET username = '{}',
     password = '{}',
@@ -90,8 +93,24 @@ SET username = '{}',
 WHERE
     id = {}", self.username, self.password, self.data, if self.banned {1} else {0}, self.retries_left, self.id);
 
-        db_conn.execute(query).unwrap();
+        Ok(db_conn.execute(query)?)
 
+    }
+
+    pub fn reset_retries(&mut self, value: usize){
+        self.retries_left = value;
+    }
+
+    pub fn retries_left(&self) -> usize{
+        self.retries_left
+    }
+
+    pub fn unban(&mut self) {
+        self.banned = false;
+    }
+
+    pub fn is_admin(&self) -> bool {
+        self.rank > 0
     }
 }
 

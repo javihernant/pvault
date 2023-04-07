@@ -5,7 +5,7 @@ pub mod account;
 
 struct AuthConfig {
     db_path: PathBuf,
-    retries_limit: usize,
+    max_retries: usize,
     // pass_reqs: PassConfig
 }
 

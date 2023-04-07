@@ -41,3 +41,15 @@ impl LoginInput {
         &self.password
     }
 }
+
+//TODO: This is for debuging purposes for now.
+impl From<[&str; 2]> for LoginInput {
+
+    fn from(value: [&str; 2]) -> Self {
+        
+        LoginInput {
+            user: value[0].to_string(),
+            password: value[1].to_string(),
+        }
+    }
+}
