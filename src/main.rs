@@ -3,22 +3,23 @@ use pvault::account_input::LoginInput;
 
 fn main() {
     let mut auth_serv = AuthServer::try_new().unwrap();
-    loop {
-        let creds = LoginInput::new();
-        match auth_serv.authenticate(&creds) {
-            Ok(_) => break,
-            Err(auth_server::Error::LoginError) => {
-                println!("Ups, wrong credentials!");
-                continue;
-            }
-            Err(auth_server::Error::LockedAccount) => {
-                println!("Shit, I've locked the account!");
-                break;
-            }
-            _ => {}
+    auth_serv.run_session();
+    // loop {
+    //     let creds = LoginInput::new();
+    //     match auth_serv.authenticate(&creds) {
+    //         Ok(_) => break,
+    //         Err(auth_server::Error::LoginError) => {
+    //             println!("Ups, wrong credentials!");
+    //             continue;
+    //         }
+    //         Err(auth_server::Error::LockedAccount) => {
+    //             println!("Shit, I've locked the account!");
+    //             break;
+    //         }
+    //         _ => {}
             
-        }
-    };
+    //     }
+    // };
     
 }
 

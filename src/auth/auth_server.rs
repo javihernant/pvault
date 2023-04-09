@@ -2,9 +2,7 @@ use std::{path::PathBuf};
 use crate::{account_input::LoginInput,};
 use sqlite::{self,Connection};
 
-use self::commands::AccountCommand;
-
-use super::{AuthConfig, account::{self, Account}};
+use super::{AuthConfig, account::{self, Account, LoginError}};
 
 pub mod commands;
 pub struct AuthServer {
@@ -14,15 +12,14 @@ pub struct AuthServer {
 }
 
 #[derive(Debug)]
-pub enum Error {
+pub enum ServerError {
     DbError(sqlite::Error),
     ConfigError,
-    LoginError,
-    LockedAccount,
 }
 
+
 impl AuthServer {
-    pub fn try_new() -> Result<AuthServer, Error> {
+    pub fn try_new() -> Result<AuthServer, ServerError> {
 
         //TODO: Read config from a toml
         let config = AuthConfig {
@@ -31,38 +28,31 @@ impl AuthServer {
         };
         let conn = match sqlite::open(&config.db_path) {
             Ok(c) => c,
-            Err(e) => return Err(Error::DbError(e)),
+            Err(e) => return Err(ServerError::DbError(e)),
         };
 
         Ok(AuthServer { db_conn: conn, config, account:None})
     }
 
-    pub fn authenticate(&mut self, creds: &LoginInput) -> Result<(), Error> {
-        let mut acc = match Account::fetch(creds.get_user(), &self.db_conn) {
-            Ok(acc) => {
-                acc
-            },
-            Err(_) => return Err(Error::LoginError),
-        };
+    pub fn run_session(&mut self) {
+        //Run common commands
+        //Run logged commands
+        //Run not-logged commands (Signup, Login)
+        self.login().unwrap();
+        // todo!()
+    }
 
-        if let Err(e) = acc.is_pass_valid(creds.get_pass()) {
+    fn authenticate(&mut self, creds: &LoginInput) -> Result<(), LoginError> {
+        let mut acc = Account::fetch(creds.user(), &self.db_conn)?;
+
+        if let Err(e) = acc.is_pass_valid(creds.pass()) {
             match e {
-                account::LoginError::BannedAccount => {
-                    return Err(Error::LockedAccount)
-                },
                 account::LoginError::WrongPassword => {
                     acc.log_fail_attempt();
                     acc.write_update(&self.db_conn).unwrap();
-                    if acc.retries_left() > 0 {
-                        return Err(Error::LoginError)
-                    } else {
-                        return Err(Error::LockedAccount)
-                    }
-                    
+                    Err(e)
                 },
-                account::LoginError::UserNotFound => {
-                    unreachable!();
-                }
+                _ => return Err(e),
             }
         } else {
             self.account = Some(acc);
@@ -70,18 +60,18 @@ impl AuthServer {
         }
     }
 
-    pub fn execute(&mut self, command:&AccountCommand) -> Result<(), commands::CommandError>{
-        if self.account.is_some() {
-            match command {
-                AccountCommand::Unban(user) => Ok(self.unban(user)?),
-    
-            }
-        }
-        else {
-            Err(commands::CommandError::NoUserLogged)
-        }
+    // fn execute(&mut self, command:&AccountCommand) -> Result<(), commands::CommandError>{
+    //     if self.account.is_some() {
+    //         match command {
+    //             AccountCommand::Unban(user) => Ok(self.unban(user)?),
+                
+    //         }
+    //     }
+    //     else {
+    //         Err(commands::CommandError::NoUserLogged)
+    //     }
         
-    }
+    // }
 }
 
 

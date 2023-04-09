@@ -23,9 +23,9 @@ pub enum LoginError {
 impl Display for LoginError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UserNotFound => write!(f, "Invalid User"),
-            Self::WrongPassword => write!(f, "Wrong Password"),
-            Self::BannedAccount => write!(f, "This account is banned"),
+            Self::UserNotFound => write!(f, "invalid User"),
+            Self::WrongPassword => write!(f, "wrong Password"),
+            Self::BannedAccount => write!(f, "this account is banned"),
         }
     }
 }

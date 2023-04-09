@@ -1,4 +1,3 @@
-use std::io::{self, Write};
 
 #[derive(Debug)]
 pub struct LoginInput {
@@ -7,25 +6,9 @@ pub struct LoginInput {
 }
 
 impl LoginInput {
-    fn read_user() -> String {
-        print!("User: ");
-        io::stdout().flush().unwrap();
-        let mut user = String::new();
-        io::stdin().read_line(&mut user).expect("Failed to read line");
-        user.trim().to_string()
-    }
-
-    fn read_pass() -> String {
-        print!("Password: ");
-        io::stdout().flush().unwrap();
-        let mut password = String::new();
-        io::stdin().read_line(&mut password).expect("Failed to read line");
-        password.trim().to_string()
-    }
-
     pub fn new() -> LoginInput {
-        let user = Self::read_user();
-        let password = Self::read_pass();
+        let user = super::read_user();
+        let password = super::read_pass();
 
         LoginInput { 
             user,
@@ -33,11 +16,11 @@ impl LoginInput {
         }
     }
 
-    pub fn get_user(&self) -> &str {
+    pub fn user(&self) -> &str {
         &self.user
     }
 
-    pub fn get_pass(&self) -> &str {
+    pub fn pass(&self) -> &str {
         &self.password
     }
 }
