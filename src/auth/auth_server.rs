@@ -2,6 +2,8 @@ use std::{path::PathBuf};
 use crate::{account_input::LoginInput,};
 use sqlite::{self,Connection};
 
+use self::commands::{Command, CommandError};
+
 use super::{AuthConfig, account::{self, Account, LoginError}};
 
 pub mod commands;
@@ -38,8 +40,16 @@ impl AuthServer {
         //Run common commands
         //Run logged commands
         //Run not-logged commands (Signup, Login)
-        self.login().unwrap();
-        // todo!()
+        loop{
+            match Command::try_read() {
+                Ok(comm) => {
+                    self.execute(comm).unwrap_or_else(|err| {
+                            eprintln!("Error while executing a command: {:?}", err);
+                    });
+                },
+                Err(e) => eprintln!("Error reading command: {:?}", e),
+            }
+        }
     }
 
     fn authenticate(&mut self, creds: &LoginInput) -> Result<(), LoginError> {
@@ -60,18 +70,16 @@ impl AuthServer {
         }
     }
 
-    // fn execute(&mut self, command:&AccountCommand) -> Result<(), commands::CommandError>{
-    //     if self.account.is_some() {
-    //         match command {
-    //             AccountCommand::Unban(user) => Ok(self.unban(user)?),
-                
-    //         }
-    //     }
-    //     else {
-    //         Err(commands::CommandError::NoUserLogged)
-    //     }
+    fn execute(&mut self, command:Command) -> Result<(), CommandError> {
+        match command {
+            Command::Login => self.login(),
+            _ => Err(CommandError::ExecutionError("")),
+
+            // Command::Unban(user) => Ok(self.unban(user)?),
+            
+        }
         
-    // }
+    }
 }
 
 

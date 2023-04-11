@@ -6,9 +6,9 @@ use crate::auth::account::LoginError;
 #[derive(Debug)]
 pub enum CommandError {
     UnknownCommand,
-    NotEnoughPrivilege,
+    NotAuthorized,
     ExecutionError(&'static str),
-    LoginError(LoginError)
+    LoginError(LoginError),
 }
 
 impl From<LoginError> for CommandError {
@@ -18,21 +18,30 @@ impl From<LoginError> for CommandError {
 }
 
 #[derive(Debug)]
-pub enum Command<'a> {
+pub enum Command {
     Login,
     Register,
-    Unban (&'a str)
+    Unban (String)
 }
 
-impl FromStr for Command<'_> {
+impl FromStr for Command {
     type Err = CommandError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let args:Vec<&str> = s.split(" ").collect();
+        let args:Vec<&str> = s.split_ascii_whitespace().collect();
         match args[0] {
             "/login" => Ok(Self::Login),
             _ => Err(CommandError::UnknownCommand),
         }
+    }
+}
+
+impl Command {
+    
+    pub fn try_read() -> Result<Command, CommandError> {
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+        Ok(Command::from_str(input.as_str())?)
     }
 }
 
@@ -45,9 +54,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_read_command() {
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input).unwrap();
-        let comm = Command::from_str(input.as_str()).unwrap();
+
         println!("{:?}", comm);
     }
 }

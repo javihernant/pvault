@@ -25,7 +25,7 @@ impl AuthServer {
             }
         }
         else {
-            Err(CommandError::NotEnoughPrivilege)
+            Err(CommandError::NotAuthorized)
         }
         
     }
