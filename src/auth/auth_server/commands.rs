@@ -9,6 +9,7 @@ pub enum CommandError {
     NotAuthorized,
     ExecutionError(&'static str),
     LoginError(LoginError),
+    UserNotLogged
 }
 
 impl From<LoginError> for CommandError {
@@ -31,6 +32,13 @@ impl FromStr for Command {
         let args:Vec<&str> = s.split_ascii_whitespace().collect();
         match args[0] {
             "/login" => Ok(Self::Login),
+            "/unban" => {
+                if args.len() < 2 {
+                    Err(CommandError::ExecutionError("Not enough arguments"))
+                } else {
+                    Ok(Command::Unban(args[1].to_string()))
+                }
+            }
             _ => Err(CommandError::UnknownCommand),
         }
     }

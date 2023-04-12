@@ -73,12 +73,17 @@ impl AuthServer {
     fn execute(&mut self, command:Command) -> Result<(), CommandError> {
         match command {
             Command::Login => self.login(),
+            Command::Unban(user) => self.unban(user.as_str()),
             _ => Err(CommandError::ExecutionError("")),
 
             // Command::Unban(user) => Ok(self.unban(user)?),
             
         }
         
+    }
+
+    pub fn is_user_logged(&self) -> bool {
+        self.account.is_some()
     }
 }
 
