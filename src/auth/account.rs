@@ -7,7 +7,7 @@ pub struct Account {
     id: usize,
     username: String,
     password: String,
-    data: String,
+    motto: String,
     banned: bool,
     retries_left: usize,
     rank: i32,
@@ -40,7 +40,7 @@ impl Account {
             let id = statement.read::<i64, _>("id").unwrap() as usize;
             let username = statement.read::<String, _>("username").unwrap();
             let password = statement.read::<String, _>("password").unwrap();
-            let data = statement.read::<String, _>("data").unwrap();
+            let motto = statement.read::<String, _>("motto").unwrap();
             let banned = statement.read::<i64, _>("banned").unwrap() != 0;
             let retries_left = statement.read::<i64, _>("retries_left").unwrap() as usize;
             let rank = statement.read::<i64, _>("rank").unwrap() as i32;
@@ -49,7 +49,7 @@ impl Account {
                 id,
                 username,
                 password,
-                data,
+                motto,
                 banned,
                 retries_left,
                 rank
@@ -87,14 +87,13 @@ impl Account {
         let query = format!("UPDATE users
 SET username = '{}',
     password = '{}',
-    data = '{}',
+    motto = '{}',
     banned = {},
     retries_left = {}
 WHERE
-    id = {}", self.username, self.password, self.data, if self.banned {1} else {0}, self.retries_left, self.id);
+    id = {}", self.username, self.password, self.motto, if self.banned {1} else {0}, self.retries_left, self.id);
 
         Ok(db_conn.execute(query)?)
-
     }
 
     pub fn reset_retries(&mut self, value: usize){
@@ -111,6 +110,13 @@ WHERE
 
     pub fn is_admin(&self) -> bool {
         self.rank > 0
+    }
+
+    pub fn show_stats(&self) {
+        println!("Username: {}", self.username);
+        println!("Motto: {}", self.motto);
+        println!("Banned: {}", self.banned);
+        println!("Rank: {}", self.rank);
     }
 }
 
@@ -136,5 +142,12 @@ mod tests {
         let mut acc = Account::fetch("javi", &conn).unwrap();
         acc.log_fail_attempt();
         acc.write_update(&conn);
+    }
+
+    #[test]
+    fn test_show_stats() {
+        let conn = create_db_conn();
+        let acc = Account::fetch("javi", &conn).unwrap();
+        acc.show_stats();
     }
 }

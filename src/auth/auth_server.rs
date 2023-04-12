@@ -74,9 +74,8 @@ impl AuthServer {
         match command {
             Command::Login => self.login(),
             Command::Unban(user) => self.unban(user.as_str()),
+            Command::Stats(user) => self.show_stats(&user),
             _ => Err(CommandError::ExecutionError("")),
-
-            // Command::Unban(user) => Ok(self.unban(user)?),
             
         }
         

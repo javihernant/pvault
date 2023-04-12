@@ -19,10 +19,11 @@ impl From<LoginError> for CommandError {
 }
 
 #[derive(Debug)]
-pub enum Command {
+pub enum Command{
     Login,
     Register,
-    Unban (String)
+    Unban (String),
+    Stats (Option<String>)
 }
 
 impl FromStr for Command {
@@ -38,6 +39,10 @@ impl FromStr for Command {
                 } else {
                     Ok(Command::Unban(args[1].to_string()))
                 }
+            },
+            "/stats" => {
+                let user = args.get(1).map(ToString::to_string);
+                Ok(Command::Stats(user))
             }
             _ => Err(CommandError::UnknownCommand),
         }
@@ -60,9 +65,4 @@ mod common;
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn test_read_command() {
-
-        println!("{:?}", comm);
-    }
 }

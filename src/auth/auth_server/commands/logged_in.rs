@@ -28,4 +28,17 @@ impl AuthServer {
         }
         
     }
+
+    pub fn show_stats(&self, user: &Option<String>) -> Result<(), CommandError> {
+        if !self.is_user_logged() {
+            return Err(CommandError::UserNotLogged);
+        }
+        if let Some(user) = user {
+            let acc = Account::fetch(user, &self.db_conn)?;
+            acc.show_stats();
+        } else {
+            self.account.as_ref().unwrap().show_stats();
+        }
+        Ok(())
+    }
 }
