@@ -66,6 +66,8 @@ impl AuthServer {
             }
         } else {
             self.account = Some(acc);
+            self.account.as_mut().unwrap().reset_retries(self.config.max_retries);
+            self.account.as_ref().unwrap().write_update(&self.db_conn).unwrap();
             Ok(())
         }
     }

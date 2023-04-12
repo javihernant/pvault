@@ -33,7 +33,7 @@ impl AuthServer {
         if !self.is_user_logged() {
             return Err(CommandError::UserNotLogged);
         }
-        if let Some(user) = user {
+        if let Some(user) = user.as_deref() {
             let acc = Account::fetch(user, &self.db_conn)?;
             acc.show_stats();
         } else {
