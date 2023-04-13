@@ -1,6 +1,54 @@
 use std::fmt::Display;
+use chrono::naive::{NaiveDate, NaiveDateTime};
 
 use sqlite::{State, Connection};
+
+#[derive(Debug, Copy, Clone)]
+enum Status {
+    Online,
+    Offline,
+    Idle,
+    Invisible
+}
+
+impl Display for Status {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Status::Offline => write!(f, "offline"),
+            Status::Online => write!(f, "online"),
+            Status::Idle => write!(f, "idle"),
+            Status::Invisible => write!(f, "invisible"),
+
+        }
+    }
+}
+
+impl Status {
+    fn code(&self) -> i32 {
+        match self {
+            Status::Offline => 0,
+            Status::Online => 1,
+            Status::Idle => 2,
+            Status::Invisible => 3,
+        }
+    }
+}
+#[derive(Debug)]
+struct InvalidStatus;
+
+impl TryFrom<i32> for Status {
+    type Error = InvalidStatus;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Status::Offline),
+            1 => Ok(Status::Online),
+            2 => Ok(Status::Idle),
+            3 => Ok(Status::Invisible),
+            _ => Err(InvalidStatus)
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct Account {
@@ -11,6 +59,10 @@ pub struct Account {
     banned: bool,
     retries_left: usize,
     rank: i32,
+    email: String,
+    last_on: NaiveDateTime,
+    status: Status,
+    signup_date: NaiveDateTime,
 }
 
 #[derive(Debug)]
@@ -44,7 +96,12 @@ impl Account {
             let banned = statement.read::<i64, _>("banned").unwrap() != 0;
             let retries_left = statement.read::<i64, _>("retries_left").unwrap() as usize;
             let rank = statement.read::<i64, _>("rank").unwrap() as i32;
+            let email = statement.read::<String, _>("email").unwrap();
+            let last_on = statement.read::<String, _>("last_on").unwrap();
+            let signup_date = statement.read::<String, _>("signup_date").unwrap();
+            let status = statement.read::<i64, _>("status").unwrap() as i32;
 
+            let parse_from_str = NaiveDateTime::parse_from_str;
             let acc = Account {
                 id,
                 username,
@@ -52,7 +109,11 @@ impl Account {
                 motto,
                 banned,
                 retries_left,
-                rank
+                rank,
+                email,
+                last_on: parse_from_str(last_on.as_str(), "%Y-%m-%d %H:%M:%S").unwrap(),
+                status: Status::try_from(status).unwrap(),
+                signup_date: parse_from_str(signup_date.as_str(), "%Y-%m-%d %H:%M:%S").unwrap(),
             };
             Ok(acc)
         } else {
@@ -89,9 +150,14 @@ SET username = '{}',
     password = '{}',
     motto = '{}',
     banned = {},
-    retries_left = {}
+    retries_left = {},
+    rank = {},
+    email = '{}',
+    last_on = '{}',
+    status = {},
+    signup_date = '{}'
 WHERE
-    id = {}", self.username, self.password, self.motto, if self.banned {1} else {0}, self.retries_left, self.id);
+    id = {}", self.username, self.password, self.motto, if self.banned {1} else {0}, self.retries_left, self.rank, self.email, self.last_on, self.status.code(), self.signup_date, self.id);
 
         Ok(db_conn.execute(query)?)
     }
@@ -112,11 +178,24 @@ WHERE
         self.rank > 0
     }
 
-    pub fn show_stats(&self) {
+    pub fn show_stats(&self, caller_is_admin: bool) {
         println!("Username: {}", self.username);
         println!("Motto: {}", self.motto);
-        println!("Banned: {}", self.banned);
-        println!("Rank: {}", self.rank);
+        println!("Last on: {}", self.last_on);
+        let status = match self.status {
+            Status::Invisible if !caller_is_admin => Status::Offline,
+            status => status,
+        };
+        println!("Status: {}", status);
+
+        if caller_is_admin {
+            println!("===Extra info:===");
+            println!("Banned: {}", self.banned);
+            println!("Rank: {}", self.rank);
+            println!("Email: {}", self.email);
+            println!("Signed up on: {}", self.signup_date)
+
+        }
     }
 }
 
@@ -141,7 +220,8 @@ mod tests {
         let conn = create_db_conn();
         let mut acc = Account::fetch("javi", &conn).unwrap();
         acc.log_fail_attempt();
-        acc.write_update(&conn);
+        acc.status = 2;
+        acc.write_update(&conn).unwrap();
     }
 
     #[test]

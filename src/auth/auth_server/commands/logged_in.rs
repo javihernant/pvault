@@ -33,11 +33,12 @@ impl AuthServer {
         if !self.is_user_logged() {
             return Err(CommandError::UserNotLogged);
         }
+        let caller_is_admin = self.account.as_ref().unwrap().is_admin();
         if let Some(user) = user.as_deref() {
             let acc = Account::fetch(user, &self.db_conn)?;
-            acc.show_stats();
+            acc.show_stats(caller_is_admin);
         } else {
-            self.account.as_ref().unwrap().show_stats();
+            self.account.as_ref().unwrap().show_stats(true);
         }
         Ok(())
     }

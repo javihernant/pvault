@@ -10,6 +10,7 @@ pub mod commands;
 pub struct AuthServer {
     db_conn: Connection,
     config: AuthConfig,
+    //connections = addr: connection {account, tcpstream}
     account: Option<Account>,
 }
 
@@ -18,7 +19,6 @@ pub enum ServerError {
     DbError(sqlite::Error),
     ConfigError,
 }
-
 
 impl AuthServer {
     pub fn try_new() -> Result<AuthServer, ServerError> {
@@ -37,9 +37,7 @@ impl AuthServer {
     }
 
     pub fn run_session(&mut self) {
-        //Run common commands
-        //Run logged commands
-        //Run not-logged commands (Signup, Login)
+
         loop{
             match Command::try_read() {
                 Ok(comm) => {
@@ -88,5 +86,14 @@ impl AuthServer {
     }
 }
 
-
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_fetch_user() {
+        let auth = AuthServer::try_new().unwrap();
+        let acc = Account::fetch("javi", &auth.db_conn).unwrap();
+        println!("{:?}", acc);
+    }
+}
 
